@@ -14,6 +14,16 @@ here — this is only the MAC-disabling primitive.
 > only on devices you own or are explicitly authorized to test. Back up
 > first. Use at your own risk.
 
+## Origin
+
+Extracted and trimmed from the full CVE-2026-43074 proof of concept by
+NebuSec:
+
+<https://github.com/NebuSec/CyberMeowfia/tree/main/security-research/Ndays/Android-CVE-2026-43074>
+
+The upstream bug was fixed by deferring the eventpoll free until an RCU
+grace period (commit `07712db80857d5d09ae08f3df85a708ecfc3b61f`).
+
 ## Target
 
 Pinned to one exact Pixel 10 Pro build because the SELinux enforcing
@@ -30,9 +40,8 @@ build (physical load offset + KASLR slide) in `src/target.h`.
 
 ## Build
 
-Requires the Android NDK (r29 by default) with the aarch64 clang
-toolchain. From a shell with `NDK_ROOT` pointing at the NDK (or placed
-at `~/android-ndk-cache/android-ndk-r29`):
+Requires the Android NDK with the aarch64 clang toolchain. The
+Makefile defaults to `NDK_ROOT = /opt/android-ndk` and `API = 35`:
 
 ```
 make            # produces build/disabler
@@ -41,7 +50,7 @@ make            # produces build/disabler
 Override the API level or NDK location as needed:
 
 ```
-make API=35 NDK_ROOT=/path/to/android-ndk-r29
+make API=35 NDK_ROOT=/path/to/android-ndk
 ```
 
 ## Run
