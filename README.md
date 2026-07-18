@@ -1,4 +1,4 @@
-# android-selinux-disabler
+# badepoll-selinux-disabler
 
 Standalone extraction of the SELinux-disabling stage from the [CVE-2026-43074](https://nvd.nist.gov/vuln/detail/CVE-2026-43074) eventpoll UAF exploit. It races the `eventpoll` loop-depth check (`ep_get_upwards_depth_proc`) to write a zero into `selinux_state.enforcing`, switching the device to Permissive via a single-byte kernel write. This is the MAC-disabling primitive only — no privilege escalation.
 
