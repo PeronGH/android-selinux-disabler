@@ -1,13 +1,26 @@
 # android-selinux-disabler
 
-Standalone extraction of the SELinux-disabling stage from the [CVE-2026-43074](https://github.com/NebuSec/CyberMeowfia/tree/main/security-research/Ndays/Android-CVE-2026-43074) eventpoll UAF exploit. It races the `eventpoll` loop-depth check to write a zero into `selinux_state.enforcing`, switching the device to Permissive via a single-byte kernel write. This is the MAC-disabling primitive only — no privilege escalation.
+Standalone extraction of the SELinux-disabling stage from the [CVE-2026-43074](https://nvd.nist.gov/vuln/detail/CVE-2026-43074) eventpoll UAF exploit. It races the `eventpoll` loop-depth check (`ep_get_upwards_depth_proc`) to write a zero into `selinux_state.enforcing`, switching the device to Permissive via a single-byte kernel write. This is the MAC-disabling primitive only — no privilege escalation.
 
 > [!WARNING]
 > Kernel exploit proof of concept. May crash the kernel, corrupt data, or leave the device inconsistent. Run only on devices you own or are authorized to test. Back up first.
 
 ## Origin
 
-Trimmed from the full PoC by NebuSec ([source tree](https://github.com/NebuSec/CyberMeowfia/tree/main/security-research/Ndays/Android-CVE-2026-43074)). Upstream fixed the bug by deferring the eventpoll free to an RCU grace period ([commit `07712db8`](https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/commit/?id=07712db80857d5d09ae08f3df85a708ecfc3b61f)).
+Trimmed from the full PoC by NebuSec ([source tree](https://github.com/NebuSec/CyberMeowfia/tree/main/security-research/Ndays/Android-CVE-2026-43074)). The UAF sits in the eventpoll loop-depth check (`ep_get_upwards_depth_proc`), which walks `epi->ep` under RCU while `ep_free()` can free the `struct eventpoll` from a concurrent thread. Upstream fixed it by deferring the free to an RCU grace period ([commit `07712db8`](https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/commit/?id=07712db80857d5d09ae08f3df85a708ecfc3b61f); [NVD](https://nvd.nist.gov/vuln/detail/CVE-2026-43074), [OSV](https://osv.dev/vulnerability/CVE-2026-43074)).
+
+This is distinct from "Bad Epoll" (CVE-2026-46242), a separate use-after-free in `ep_remove()` in the same eventpoll code; the race here is specifically the loop-depth-check lifetime bug fixed by `07712db8`.
+
+## Affected kernels
+
+Per the kernel.org CNA (via OSV/NVD), the vulnerable stable streams and their fixes:
+
+- `6.4.0` – `<6.6.136` (fixed `6.6.136`)
+- `6.7.0` – `<6.12.83` (fixed `6.12.83`)
+- `6.13.0` – `<6.18.24` (fixed `6.18.24`)
+- `6.19.0` – `<6.19.14` (fixed `6.19.14`)
+
+The pinned target kernel `6.6.118-android15-8` falls inside the affected 6.6 range (fixed at `6.6.136`). Vendor kernels that backported the fix without bumping the upstream version are not vulnerable — verify actual patch presence rather than relying on `uname -r` alone.
 
 ## Target
 
